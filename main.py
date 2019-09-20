@@ -12,7 +12,6 @@ bot = telebot.TeleBot(config.token)
 sch = ScheduleManager("schedule.json")
 user_state = {}
 
-
 def get_text_schedule(user_id, day):
     arr = sch.get_day_schedule(user_id, day)
     text = "{}:\n".format(strings.day_names[day])
