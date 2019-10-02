@@ -2,18 +2,35 @@ import telebot
 import strings
 import config
 from telebot import types
-from schedule_manager import ScheduleManager
+import user_data_manager
 import datetime
 import re
+import time
+from flask import Flask, request
 
-bot = telebot.TeleBot(config.token)
+
+bot = telebot.TeleBot(config.token, threaded=False)
 # telebot.apihelper.proxy = {'https': 'socks5://127.0.0.1:9050'}
 
-sch = ScheduleManager("schedule.json")
+data_manager = user_data_manager.UserDataManager(config.db_file)
 user_state = {}
 
+bot.remove_webhook()
+time.sleep(1)
+bot.set_webhook(url="https://minnakhmetov.pythonanywhere.com/{}".format(config.token))
+
+app = Flask(__name__)
+
+
+@app.route('/{}'.format(config.token), methods=["POST"])
+def webhook():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    print("Message")
+    return "ok", 200
+
+
 def get_text_schedule(user_id, day):
-    arr = sch.get_day_schedule(user_id, day)
+    arr = data_manager.get_day_schedule(user_id, day)
     text = "{}:\n".format(strings.day_names[day])
     for i in range(len(arr)):
         text += "{}. {}\n".format(str(i + 1), arr[i])
@@ -47,7 +64,7 @@ def get_day_choice_keyboard():
 def get_lesson_choice_keyboard(cbq):
     path = cbq.data
     day = int(path.split("_")[1])
-    lessons = sch.get_day_schedule(cbq.from_user.id, day)
+    lessons = data_manager.get_day_schedule(cbq.from_user.id, day)
 
     kb = types.InlineKeyboardMarkup()
     for i in range(8):
@@ -184,7 +201,7 @@ def change_lesson_name(cbq):
 def delete_lesson(cbq):
     user_id = cbq.from_user.id
     day, num = map(int, re.findall(r"\d", cbq.data))
-    sch.set_lesson(user_id, day, num, "")
+    data_manager.set_lesson(user_id, day, num, "")
     show_success_deletion_window(cbq.message.chat.id, day)
 
 
@@ -207,7 +224,7 @@ def handle_text_message(message):
             bot.send_message(message.chat.id, strings.wrong_name_length_text)
         else:
             day, num = map(int, re.findall(r"\d", user_state[user_id]))
-            sch.set_lesson(user_id, day, num, message.text)
+            data_manager.set_lesson(user_id, day, num, message.text)
             user_state[user_id] = "none"
             show_success_changing_window(message.chat.id, day)
     elif re.match(r"fill", user_state[user_id]):
@@ -219,14 +236,10 @@ def handle_text_message(message):
             while len(lessons) < 8:
                 lessons.append("")
 
-            sch.set_day_schedule(user_id, day, lessons)
+            data_manager.set_day_schedule(user_id, day, lessons)
             show_success_filling_window(message.chat.id, day)
 
         else:
             bot.send_message(message.chat.id,
                              "{}\n\n{}".format(strings.wrong_day_format_text,
                                                strings.fill_day_format))
-
-
-if __name__ == "__main__":
-    bot.polling()

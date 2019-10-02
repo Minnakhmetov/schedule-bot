@@ -25,6 +25,12 @@ how_to_fill_explanation_text = "Хорошо. Теперь введите рас
 wrong_day_format_text = "Мне грустно, что вы не справились. " \
                         "Нужно всего лишь ввести расписание в следующем формате:"
 
+
+buy_pro_button = "Купить PRO версию"
+invoice_title = "PRO версия"
+invoice_description = "Вы сможете раз и навсегда избавиться от кнопки Купить PRO версию."
+congratulations_pro_acquiring_text = "Вы приобрели PRO статус. Поздравляю!"
+
 day_names = ["Понедельник",
              "Вторник",
              "Среда",
